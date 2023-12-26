@@ -1,0 +1,8 @@
+{
+    "headers": {
+        "X-Package-Data-Type": "metadata"
+    },
+    "queryStringParameters": {
+        "name": "test"
+    }
+}

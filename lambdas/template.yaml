@@ -1,0 +1,29 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: A simple AWS Lambda template.
+
+Resources:
+  postPackage:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: index.handler
+      Runtime: nodejs16.x
+      CodeUri: ./postPackage
+      MemorySize: 256
+      Timeout: 15
+  getPackage:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: index.handler
+      Runtime: nodejs16.x
+      CodeUri: ./getPackage
+      MemorySize: 256
+      Timeout: 15
+  getPackageMeta:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: index.handler
+      Runtime: nodejs16.x
+      CodeUri: ./getPackage
+      MemorySize: 256
+      Timeout: 15
