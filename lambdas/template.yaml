@@ -9,7 +9,7 @@ Resources:
       Handler: index.handler
       Runtime: nodejs16.x
       CodeUri: ./postPackage
-      MemorySize: 256
+      MemorySize: 128
       Timeout: 15
   getPackage:
     Type: AWS::Serverless::Function
@@ -17,13 +17,5 @@ Resources:
       Handler: index.handler
       Runtime: nodejs16.x
       CodeUri: ./getPackage
-      MemorySize: 256
-      Timeout: 15
-  getPackageMeta:
-    Type: AWS::Serverless::Function
-    Properties:
-      Handler: index.handler
-      Runtime: nodejs16.x
-      CodeUri: ./getPackage
-      MemorySize: 256
+      MemorySize: 128
       Timeout: 15

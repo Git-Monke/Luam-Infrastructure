@@ -1,5 +1,6 @@
 {
     "headers": {
         "X-PackageName": "butt"
-    }
+    },
+    "body":  "{}"
 }

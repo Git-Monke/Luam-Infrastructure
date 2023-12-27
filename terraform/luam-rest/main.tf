@@ -7,9 +7,19 @@ resource "aws_api_gateway_rest_api" "luam_rest" {
 # Define the /packages path
 
 module "slash_packages" {
-  source = "../resource-module"
-  api    = aws_api_gateway_rest_api.luam_rest
-  name   = "packages"
+  source             = "../resource-module"
+  api                = aws_api_gateway_rest_api.luam_rest
+  parent_resource_id = aws_api_gateway_rest_api.luam_rest.root_resource_id
+  name               = "packages"
+}
+
+# Define the /packages/install path
+
+module "slash_install" {
+  source             = "../resource-module"
+  api                = aws_api_gateway_rest_api.luam_rest
+  parent_resource_id = module.slash_packages.resource.id
+  name               = "install"
 }
 
 # Define /packages request validators
@@ -27,6 +37,14 @@ resource "aws_api_gateway_request_validator" "validate_request_parameters_only" 
   name                        = "validateParametersOnly"
   rest_api_id                 = aws_api_gateway_rest_api.luam_rest.id
   validate_request_body       = false
+  validate_request_parameters = true
+}
+
+resource "aws_api_gateway_request_validator" "validate_everything" {
+  # name must be alphanumeric, so camelCase is used.
+  name                        = "validateEverything"
+  rest_api_id                 = aws_api_gateway_rest_api.luam_rest.id
+  validate_request_body       = true
   validate_request_parameters = true
 }
 
@@ -80,7 +98,7 @@ resource "aws_api_gateway_method" "post_package" {
 }
 
 # 
-# Define GET /packages
+# Define POST /packages/install
 # 
 
 resource "aws_api_gateway_model" "get_package_body_model" {
@@ -103,9 +121,9 @@ resource "aws_api_gateway_model" "get_package_body_model" {
 
 resource "aws_api_gateway_method" "get_package" {
   rest_api_id          = aws_api_gateway_rest_api.luam_rest.id
-  resource_id          = module.slash_packages.resource.id
-  request_validator_id = aws_api_gateway_request_validator.validate_request_parameters_only.id
-  http_method          = "GET"
+  resource_id          = module.slash_install.resource.id
+  request_validator_id = aws_api_gateway_request_validator.validate_everything.id
+  http_method          = "POST"
   authorization        = "NONE"
 
   request_models = {
@@ -176,7 +194,8 @@ module "get_package_execution_role" {
         Resource = [
           "arn:aws:s3:::luam-package-files/*",
           "arn:aws:s3:::luam-package-files",
-          "arn:aws:dynamodb:us-west-2:${data.aws_caller_identity.current.account_id}:table/luam_package_metadata"
+          "arn:aws:dynamodb:us-west-2:${data.aws_caller_identity.current.account_id}:table/luam_package_metadata",
+          "arn:aws:logs:*:*:*"
         ]
       }
     ]
@@ -189,8 +208,8 @@ module "get_package_lambda" {
   source        = "../lambda-module"
   name          = "getPackage"
   rest_api      = aws_api_gateway_rest_api.luam_rest
-  resource_id   = module.slash_packages.resource.id
-  client_method = "GET"
+  resource_id   = module.slash_install.resource.id
+  client_method = "POST"
   role_arn      = module.get_package_execution_role.role_arn
 }
 

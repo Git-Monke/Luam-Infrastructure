@@ -3,7 +3,10 @@ resource "aws_lambda_function" "lambda" {
   function_name = var.name
   role          = var.role_arn
   handler       = "index.handler"
+
+  memory_size   = 128
   timeout       = 15
+  architectures = ["arm64"]
 
   source_code_hash = data.archive_file.archive.output_base64sha256
 
