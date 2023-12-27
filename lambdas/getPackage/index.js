@@ -1,107 +1,43 @@
-const zlib = require("zlib");
-const AWS = require("aws-sdk");
+const semver = require("semver");
 
-const s3 = new AWS.S3();
-const docClient = new AWS.DynamoDB.DocumentClient({ apiVersion: "2012-08-10" });
+const get_package_files = require("./get_package_files.js");
 
-const dynamodb_table_name = "luam_package_metadata";
-
-class APIError extends Error {
-  constructor(statusCode, message) {
-    super(message);
-    this.statusCode = statusCode || 500;
-  }
-}
-
-// Doesn't verify that name or version exists. Assumes that other functions will validate query parameters first
-async function getPackageMeta(name, version = "0.0.0") {
-  if (!name) {
-    throw new APIError(
-      'No "name" field was included in the query parameters of the request.'
-    );
+async function get_all_files(name, version, response = {}) {
+  if (
+    response[name] &&
+    Object.keys(response[name]).some((other_version) =>
+      semver.satisfies(other_version, version)
+    )
+  ) {
+    return response;
   }
 
-  const result = await docClient
-    .query({
-      TableName: dynamodb_table_name,
-      KeyConditionExpression: "PackageName = :pn AND PackageVersion = :pv",
-      ExpressionAttributeValues: {
-        [":pn"]: name,
-        [":pv"]: version,
-      },
-    })
-    .promise();
-
-  if (result.Count > 1) {
-    throw new APIError(
-      `The package ${name} v${version} could not be found.`,
-      404
-    );
+  if (!response[name]) {
+    response[name] = {};
   }
 
-  return result.Items[0];
-}
+  let [payload, meta] = await get_package_files(name, version);
+  const dependencies = meta.Dependencies;
+  console.log(payload, meta);
 
-async function getPackageFile(name, version) {
-  if (!name || !version) {
-    let missingFields = [];
-    if (!name) missingFields.push("name");
-    if (!version) missingFields.push("version");
-
-    return {
-      statusCode: 400,
-      body: JSON.stringify({
-        message: `Missing required query parameters: ${missingFields}`,
-      }),
-    };
-  }
-
-  const params = {
-    Bucket: "luam-package-files",
-    Key: `${name}/${name}-${version}.gz`,
+  response[name][meta.PackageVersion] = {
+    payload,
+    dependencies,
   };
 
-  const meta = await getPackageMeta(name, version);
+  for (const dependency in dependencies) {
+    response = get_all_files(dependency, dependencies[dependency], response);
+  }
 
-  const data = await s3.getObject(params).promise();
-  const uncompressedData = zlib.gunzipSync(data.Body);
-  const payload = uncompressedData.toString("base64");
-
-  return {
-    statusCode: 200,
-    body: JSON.stringify({
-      payload: payload,
-      meta: meta,
-    }),
-  };
+  return response;
 }
 
 exports.handler = async (event) => {
-  const dataType = event.headers["X-Package-Data-Type"];
-
-  const queryParams = event.queryStringParameters || {};
-  const name = queryParams.name;
-  const version = queryParams.version;
+  const name = event.headers["X-PackageName"];
+  const version = event.headers["X-PackageVersion"];
 
   try {
-    if (dataType === "metadata") {
-      const result = await getPackageMeta(name);
-      return {
-        statusCode: 200,
-        body: JSON.stringify(result),
-      };
-    }
-
-    if (dataType === "file") {
-      return await getPackageFile(name, version);
-    }
-
-    return {
-      statusCode: 400,
-      body: JSON.stringify({
-        message: `Expected header X-Package-Data-Type to be either "metadata" or "file". Got ${dataType}`,
-      }),
-    };
+    return await get_all_files(name, version);
   } catch (err) {
     return {
       statusCode: err.statusCode || 500,

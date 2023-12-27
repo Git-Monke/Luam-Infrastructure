@@ -1,4 +1,4 @@
 **/node_modules
-lambda_payloads/*.zip
+lambda_payloads
 **/terraform/.terraform
 .DS_Store

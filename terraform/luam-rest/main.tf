@@ -83,6 +83,24 @@ resource "aws_api_gateway_method" "post_package" {
 # Define GET /packages
 # 
 
+resource "aws_api_gateway_model" "get_package_body_model" {
+  rest_api_id = aws_api_gateway_rest_api.luam_rest.id
+
+  name         = "getPackageBodyModel"
+  description  = "The schema for installing a package"
+  content_type = "application/json"
+
+  schema = jsonencode({
+    type = "object"
+    additionalProperties = {
+      type = "array",
+      "items" : {
+        "type" : "string"
+      }
+    }
+  })
+}
+
 resource "aws_api_gateway_method" "get_package" {
   rest_api_id          = aws_api_gateway_rest_api.luam_rest.id
   resource_id          = module.slash_packages.resource.id
@@ -90,14 +108,12 @@ resource "aws_api_gateway_method" "get_package" {
   http_method          = "GET"
   authorization        = "NONE"
 
-  # request_models = {
-  #   "application/json" = aws_api_gateway_model.get_package_body_model.name
-  # }
+  request_models = {
+    "application/json" = aws_api_gateway_model.get_package_body_model.name
+  }
 
   request_parameters = {
-    # "method.request.querystring.name"    = true,
-    # "method.request.querystring.version" = true
-    "method.request.header.X-Package-Data-Type" = true
+    "method.request.header.X-PackageName" = true
   }
 }
 
