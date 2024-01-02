@@ -69,13 +69,44 @@ resource "aws_dynamodb_table" "luam_package_metadata" {
   }
 }
 
-# Create the luam rest api
+resource "aws_dynamodb_table" "luam_users" {
+  name         = "luam_users"
+  billing_mode = "PAY_PER_REQUEST"
 
-module "luam_rest" {
-  source = "./luam-rest"
+  hash_key = "UserID"
+
+  attribute {
+    name = "UserID"
+    type = "N"
+  }
 }
 
-resource "aws_acm_certificate" "api_cert" {
-  domain_name       = "api.luam.dev"
-  validation_method = "DNS"
+resource "aws_dynamodb_table" "luam_api_tokens" {
+  name         = "luam_api_tokens"
+  billing_mode = "PAY_PER_REQUEST"
+
+  hash_key  = "UserID"
+  range_key = "TokenIDHash"
+
+  attribute {
+    name = "UserID"
+    type = "N"
+  }
+
+  attribute {
+    name = "TokenIDHash"
+    type = "S"
+  }
+}
+
+# Create the luam rest api
+
+variable "redeploy_gateway" {
+  type    = bool
+  default = false
+}
+
+module "luam_rest" {
+  source          = "./luam-rest"
+  redploy_gateway = var.redeploy_gateway
 }

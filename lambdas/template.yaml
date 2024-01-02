@@ -8,14 +8,46 @@ Resources:
     Properties:
       Handler: index.handler
       Runtime: nodejs16.x
-      CodeUri: ./postPackage
+      CodeUri: ./packages/postPackage
       MemorySize: 128
       Timeout: 15
-  getPackage:
+  postInstall:
     Type: AWS::Serverless::Function
     Properties:
       Handler: index.handler
       Runtime: nodejs16.x
-      CodeUri: ./getPackage
+      CodeUri: ./packages/install/installPackage
+      MemorySize: 128
+      Timeout: 15
+  postSignup:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: index.handler
+      Runtime: nodejs16.x
+      CodeUri: ./signup/postSignup
+      MemorySize: 128
+      Timeout: 15
+  postToken:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: index.handler
+      Runtime: nodejs16.x
+      CodeUri: ./tokens/postToken
+      MemorySize: 128
+      Timeout: 15
+  getTokens:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: index.handler
+      Runtime: nodejs16.x
+      CodeUri: ./tokens/getTokens
+      MemorySize: 128
+      Timeout: 15
+  deleteToken:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: index.handler
+      Runtime: nodejs16.x
+      CodeUri: ./tokens/deleteToken
       MemorySize: 128
       Timeout: 15

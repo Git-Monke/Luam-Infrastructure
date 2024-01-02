@@ -1,0 +1,6 @@
+{
+    "headers": {
+        "Authorization": "Bearer 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"
+    },
+    "body": "{\"scopes\": {\n        \"change-owners\": false,\n        \"publish-new\": false,\n        \"publish-update\": true,\n        \"yank\": true\n    }}"
+}

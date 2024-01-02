@@ -28,3 +28,8 @@ variable "role_arn" {
   description = "The role that the lambda assumes"
   type        = string
 }
+
+variable "resource_path" {
+  description = "The path to the resource from the api gateway root."
+  type        = string
+}

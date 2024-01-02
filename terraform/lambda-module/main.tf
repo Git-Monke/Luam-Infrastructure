@@ -1,5 +1,5 @@
 resource "aws_lambda_function" "lambda" {
-  filename      = "../lambda_payloads/${var.name}.zip"
+  filename      = "../lambda_payloads/${var.resource_path}/${var.name}.zip"
   function_name = var.name
   role          = var.role_arn
   handler       = "index.handler"
@@ -24,8 +24,8 @@ resource "aws_lambda_permission" "lambda_permissions" {
 
 data "archive_file" "archive" {
   type        = "zip"
-  source_dir  = "../lambdas/${var.name}"
-  output_path = "../lambda_payloads/${var.name}.zip"
+  source_dir  = "../lambdas/${var.resource_path}/${var.name}"
+  output_path = "../lambda_payloads/${var.resource_path}/${var.name}.zip"
 }
 
 resource "aws_api_gateway_integration" "integration" {
