@@ -97,6 +97,12 @@ resource "aws_dynamodb_table" "luam_api_tokens" {
     name = "TokenIDHash"
     type = "S"
   }
+
+  global_secondary_index {
+    name            = "TokenIDHash-index"
+    hash_key        = "TokenIDHash"
+    projection_type = "ALL"
+  }
 }
 
 # Create the luam rest api

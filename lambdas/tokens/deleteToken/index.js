@@ -5,7 +5,6 @@ const docClient = new AWS.DynamoDB.DocumentClient({ apiVersion: "2012-08-10" });
 const dynamodb_table_name = "luam_api_tokens";
 
 const axios = require("axios");
-const sha256 = require("js-sha256");
 
 exports.handler = async (event) => {
   try {
@@ -26,7 +25,7 @@ exports.handler = async (event) => {
         TableName: dynamodb_table_name,
         Key: {
           UserID: user_data.id,
-          TokenIDHash: event.headers.TokenIDHash,
+          TokenIDHash: event.headers.tokenidhash,
         },
         UpdateExpression: "set Valid = :v",
         ExpressionAttributeValues: {

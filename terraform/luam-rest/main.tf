@@ -108,6 +108,10 @@ resource "aws_api_gateway_method" "post_package" {
   http_method          = "POST"
   authorization        = "NONE"
 
+  request_parameters = {
+    "method.request.header.Authorization" = true
+  }
+
   request_models = {
     "application/json" = aws_api_gateway_model.post_package_body_model.name
   }
@@ -283,12 +287,23 @@ module "post_package_execution_role" {
           "dynamodb:Query",
           "dynamodb:PutItem",
           "dynamodb:UpdateItem",
+          "logs:*"
         ],
         Effect = "Allow",
         Resource = [
           "arn:aws:s3:::luam-package-files/*",
           "arn:aws:s3:::luam-package-files",
-          "arn:aws:dynamodb:us-west-2:${data.aws_caller_identity.current.account_id}:table/luam_package_metadata"
+          "arn:aws:dynamodb:us-west-2:${data.aws_caller_identity.current.account_id}:table/luam_package_metadata",
+          "arn:aws:logs:*:*:*"
+        ]
+      },
+      {
+        Action = [
+          "dynamodb:Query"
+        ],
+        Effect = "Allow",
+        Resource = [
+          "arn:aws:dynamodb:us-west-2:${data.aws_caller_identity.current.account_id}:table/luam_api_tokens/*/*"
         ]
       }
     ]
@@ -412,7 +427,7 @@ module "delete_token_lambda" {
   rest_api      = aws_api_gateway_rest_api.luam_rest
   resource_id   = module.slash_tokens.resource.id
   client_method = "DELETE"
-  role_arn      = module.post_token_execution_role.role_arn
+  role_arn      = module.delete_token_execution_role.role_arn
 }
 
 module "get_token_execution_role" {

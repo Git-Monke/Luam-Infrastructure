@@ -3,16 +3,18 @@ const AWS = require("aws-sdk");
 AWS.config.update({ region: "us-west-2" });
 
 const semver = require("semver");
+const sha256 = require("js-sha256");
 
 const s3 = new AWS.S3();
 const docClient = new AWS.DynamoDB.DocumentClient({ apiVersion: "2012-08-10" });
 
-const dynamodb_table_name = "luam_package_metadata";
+const luam_packages_table = "luam_package_metadata";
+const luam_api_tokens_table = "luam_api_tokens";
 
 async function getPackageMeta(name, version = "0.0.0") {
   const result = await docClient
     .query({
-      TableName: dynamodb_table_name,
+      TableName: luam_packages_table,
       KeyConditionExpression: "PackageName = :pn AND PackageVersion = :pv",
       ExpressionAttributeValues: {
         [":pn"]: name,
@@ -43,13 +45,14 @@ async function uploadPayload(body) {
   await s3.putObject(params).promise();
 }
 
-function defaultPackageMeta(body) {
+function defaultPackageMeta(body, owner) {
   return {
     Versions: [body.version],
     LatestVersion: body.version,
     PackageVersion: "0.0.0",
     PackageName: body.name,
     DateCreated: new Date().toISOString(),
+    Owners: [owner],
   };
 }
 
@@ -64,7 +67,102 @@ function buildNewEntry(body) {
 
 exports.handler = async (event) => {
   try {
+    const api_token = event.headers.Authorization;
+    const api_token_query = await docClient
+      .query({
+        TableName: luam_api_tokens_table,
+        IndexName: "TokenIDHash-index",
+        KeyConditionExpression: "TokenIDHash = :tih",
+        ExpressionAttributeValues: {
+          ":tih": sha256(api_token),
+        },
+      })
+      .promise();
+
+    if (api_token_query.Count < 1) {
+      return {
+        statusCode: 401,
+        body: JSON.stringify({
+          message: "The API token provided could not be found in the registry",
+        }),
+      };
+    }
+
+    const api_token_data = api_token_query.Items[0];
+
+    if (!api_token_data.Valid) {
+      return {
+        statusCode: 401,
+        body: JSON.stringify({
+          message:
+            "The provided API token has been deactivated and is no longer valid",
+        }),
+      };
+    }
+
+    if (
+      api_token_data.ExpirationDate !== 0 &&
+      Date.now() > api_token_data.ExpirationDate
+    ) {
+      return {
+        statusCode: 401,
+        body: JSON.stringify({
+          message: `The provided API token expired ${new Date(
+            api_token_data.ExpirationDate
+          ).toISOString()} and is no longer valid`,
+        }),
+      };
+    }
+
+    // Query for the package's metadata
+
     const body = JSON.parse(event.body);
+
+    const params = {
+      TableName: luam_packages_table,
+      KeyConditionExpression: "PackageName = :pk AND PackageVersion = :sk",
+      ExpressionAttributeValues: {
+        ":pk": body.name,
+        ":sk": "0.0.0",
+      },
+    };
+
+    const result = await docClient.query(params).promise();
+    const existedPreviously = result.Count > 0;
+    const packageMeta =
+      result.Items[0] || defaultPackageMeta(body, api_token_data.UserID);
+
+    if (existedPreviously) {
+      if (!packageMeta.Owners.includes(api_token_data.UserID)) {
+        return {
+          statusCode: 401,
+          body: JSON.stringify({
+            message:
+              "The provided api token was not created by an owner of the package you are trying to update.",
+          }),
+        };
+      }
+
+      if (!api_token_data.Scopes["publish-update"]) {
+        return {
+          statusCode: 401,
+          body: JSON.stringify({
+            message:
+              "The provided api token is not authorized to publish updates to existing packages.",
+          }),
+        };
+      }
+    }
+
+    if (!existedPreviously && !api_token_data.Scopes["publish-new"]) {
+      return {
+        statusCode: 401,
+        body: JSON.stringify({
+          message:
+            "The provided api token is not authorized to publish new packages.",
+        }),
+      };
+    }
 
     // Ensure the requested upload version is valid
 
@@ -114,21 +212,6 @@ exports.handler = async (event) => {
       }
     }
 
-    // Query for the package's metadata
-
-    const params = {
-      TableName: dynamodb_table_name,
-      KeyConditionExpression: "PackageName = :pk AND PackageVersion = :sk",
-      ExpressionAttributeValues: {
-        ":pk": body.name,
-        ":sk": "0.0.0",
-      },
-    };
-
-    const result = await docClient.query(params).promise();
-    const existedPreviously = result.Count > 0;
-    const packageMeta = result.Items[0] || defaultPackageMeta(body);
-
     // Create new metadata if this is the first time publishing
 
     if (!existedPreviously) {
@@ -138,7 +221,7 @@ exports.handler = async (event) => {
 
       await docClient
         .put({
-          TableName: dynamodb_table_name,
+          TableName: luam_packages_table,
           Item: packageMeta,
         })
         .promise();
@@ -159,7 +242,7 @@ exports.handler = async (event) => {
 
       await docClient
         .update({
-          TableName: dynamodb_table_name,
+          TableName: luam_packages_table,
           Key: {
             PackageName: body.name,
             PackageVersion: "0.0.0",
@@ -177,7 +260,7 @@ exports.handler = async (event) => {
 
     await docClient
       .put({
-        TableName: dynamodb_table_name,
+        TableName: luam_packages_table,
         Item: buildNewEntry(body),
       })
       .promise();
@@ -191,9 +274,10 @@ exports.handler = async (event) => {
       body: JSON.stringify(`Successfully posted ${body.name} ${body.version}`),
     };
   } catch (err) {
+    console.log(err);
     return {
       statusCode: err.statusCode || 500,
-      body: JSON.stringify(`Internal server error: ${err.message}`),
+      body: JSON.stringify(err),
     };
   }
 };
