@@ -17,7 +17,7 @@ Resources:
       Handler: index.handler
       Runtime: nodejs16.x
       CodeUri: ./packages/install/installPackage
-      MemorySize: 128
+      MemorySize: 256
       Timeout: 15
   postSignup:
     Type: AWS::Serverless::Function

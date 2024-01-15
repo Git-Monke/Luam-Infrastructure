@@ -6,6 +6,11 @@ const dynamodb_table_name = "luam_api_tokens";
 
 const axios = require("axios");
 
+const accessControl = {
+  "Access-Control-Allow-Origin": "*",
+  "Content-Type": "application/json",
+}
+
 exports.handler = async (event) => {
   try {
     const user_data_response = await axios.get("https://api.github.com/user", {
@@ -41,10 +46,7 @@ exports.handler = async (event) => {
       body: JSON.stringify({
         message: "Token deactivated successfully",
       }),
-      headers: {
-        "Access-Control-Allow-Origin": "*",
-        "Content-Type": "application/json",
-      },
+      headers: {...accessControl},
     };
   } catch (err) {
     console.log(err);
@@ -53,10 +55,7 @@ exports.handler = async (event) => {
       body: JSON.stringify({
         message: err.message || "Uncaught internal server error",
       }),
-      headers: {
-        "Access-Control-Allow-Origin": "*",
-        "Content-Type": "application/json",
-      },
+      headers: { ...accessControl},
     };
   }
 };

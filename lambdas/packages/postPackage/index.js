@@ -11,6 +11,12 @@ const docClient = new AWS.DynamoDB.DocumentClient({ apiVersion: "2012-08-10" });
 const luam_packages_table = "luam_package_metadata";
 const luam_api_tokens_table = "luam_api_tokens";
 
+const axios = require("axios");
+
+const bot_token =
+  "MTE5NjI0NjcyMjQ3MzYyMzYwMg.GQuClD.oRfxVpqG9mkglk8Lbi7vyhCp4YMu1DVFdUgqfA";
+const guild_id = "1181348347282456596";
+
 async function getPackageMeta(name, version = "0.0.0") {
   const result = await docClient
     .query({
@@ -219,6 +225,19 @@ exports.handler = async (event) => {
         `${body.name} did not exist previously. Creating new entry in DynamoDB.`
       );
 
+      await axios.post(
+        `https://discord.com/api/guilds/${guild_id}/roles`,
+        {
+          name: body.name,
+          color: Math.floor(Math.random() * 0xffffff),
+        },
+        {
+          headers: {
+            Authorization: `Bot ${bot_token}`,
+          },
+        }
+      );
+
       await docClient
         .put({
           TableName: luam_packages_table,
@@ -268,6 +287,28 @@ exports.handler = async (event) => {
     // Post the payload to the S3 bucket
 
     await uploadPayload(body);
+
+    try {
+      // Should factor this out into its own lambda
+      const response = await axios.get(
+        `https://discord.com/api/guilds/${guild_id}/roles`,
+        {
+          headers: {
+            Authorization: `Bot ${bot_token}`,
+          },
+        }
+      );
+
+      const roles = response.data;
+      const role = roles.find((r) => r.name === body.name);
+      const role_ping = role ? `<@&${role.id}> ` : body.name + " ";
+      axios.post(
+        "https://discord.com/api/webhooks/1196239719252635758/0S_Zvuy9lslnEQ6WEJ1G--Q2kt5zV9Af6IAYuuVJDknX9Tk_nu6-LOVPHE-1ybIw5SAg",
+        {
+          content: `${role_ping}v${body.version} has just been uploaded successfully!`,
+        }
+      );
+    } catch (err) {}
 
     return {
       statusCode: 200,

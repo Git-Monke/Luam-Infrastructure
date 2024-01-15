@@ -1,5 +1,6 @@
 {
-    "headers": {
-        "Authorization": "6Ytg4bgdHDekVtiFaK56fmIsQwLhaQIjZxd5"
-    }
+  "headers": {
+    "Authorization": "KoOqZ4rglFOly3vILY0xn56ImkgYUTqYNOCi"
+  },
+  "body": "{\n  \"name\": \"example1\",\n  \"version\": \"0.1.2\",\n  \"payload\": \"AAAA\",\n  \"dependencies\": {}\n}"
 }

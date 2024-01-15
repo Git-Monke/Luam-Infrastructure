@@ -512,7 +512,7 @@ resource "aws_api_gateway_deployment" "luam_rest_deployment" {
   rest_api_id = aws_api_gateway_rest_api.luam_rest.id
 
   triggers = {
-    redeployment = var.redploy_gateway ? timestamp() : "dont_redeploy"
+    redeployment = "dont_redeploy"
   }
 
   lifecycle {

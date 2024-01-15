@@ -9,6 +9,11 @@ const dynamodb_table_name = "luam_users";
 
 const axios = require("axios");
 
+const accessControl = {
+  "Access-Control-Allow-Origin": "*",
+  "Content-Type": "application/json",
+};
+
 exports.handler = async (event) => {
   try {
     const params = `?client_id=${CLIENT_ID}&client_secret=${CLIENT_SECRET}&code=${event.headers["x-code"]}`;
@@ -26,10 +31,7 @@ exports.handler = async (event) => {
     if (github_data_response.error) {
       return {
         statusCode: github_data_response.status,
-        headers: {
-          "Access-Control-Allow-Origin": "*",
-          "Content-Type": "application/json",
-        },
+        headers: { ...accessControl },
         body: JSON.stringify({ message: github_data.error_description }),
       };
     }
@@ -44,14 +46,6 @@ exports.handler = async (event) => {
 
     const user_data = user_data_response.data;
 
-    // const user_data = {
-    //   login: "Git-Monke",
-    //   id: 82415608,
-    //   avatar_url: "https://avatars.githubusercontent.com/u/82415608?v=4",
-    //   html_url: "https://github.com/Git-Monke",
-    //   name: "Monke",
-    // };
-
     const result = await docClient
       .query({
         TableName: dynamodb_table_name,
@@ -61,14 +55,6 @@ exports.handler = async (event) => {
         },
       })
       .promise();
-
-    const new_entry = {
-      UserID: user_data.id,
-      Login: user_data.login,
-      AvatarUrl: user_data.avatar_url,
-      HtmlUrl: user_data.html_url,
-      Name: user_data.name,
-    };
 
     if (result.Items.length === 0) {
       await docClient
@@ -81,10 +67,7 @@ exports.handler = async (event) => {
 
     return {
       statusCode: 200,
-      headers: {
-        "Access-Control-Allow-Origin": "*",
-        "Content-Type": "application/json",
-      },
+      headers: { ...accessControl },
       body: JSON.stringify({
         message: "Signed in successfully",
         access_token: github_data.access_token,
@@ -94,10 +77,7 @@ exports.handler = async (event) => {
   } catch (err) {
     return {
       statusCode: 500,
-      headers: {
-        "Access-Control-Allow-Origin": "*",
-        "Content-Type": "application/json",
-      },
+      headers: { ...accessControl },
       body: JSON.stringify({
         message: err.message || "Unknown Internal Server Error",
       }),
