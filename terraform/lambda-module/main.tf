@@ -10,6 +10,13 @@ resource "aws_lambda_function" "lambda" {
 
   source_code_hash = data.archive_file.archive.output_base64sha256
 
+  dynamic "environment" {
+    for_each = length(var.environment) > 0 ? [var.environment] : []
+    content {
+      variables = environment.value
+    }
+  }
+
   runtime = "nodejs16.x"
 }
 

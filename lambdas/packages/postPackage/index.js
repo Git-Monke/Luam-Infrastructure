@@ -12,9 +12,10 @@ const luam_packages_table = "luam_package_metadata";
 const luam_api_tokens_table = "luam_api_tokens";
 
 const axios = require("axios");
+const rando = require("rando");
+require("dotenv").config();
 
-const bot_token =
-  "MTE5NjI0NjcyMjQ3MzYyMzYwMg.GQuClD.oRfxVpqG9mkglk8Lbi7vyhCp4YMu1DVFdUgqfA";
+const bot_token = process.env.BOT_TOKEN;
 const guild_id = "1181348347282456596";
 
 async function getPackageMeta(name, version = "0.0.0") {
@@ -229,7 +230,7 @@ exports.handler = async (event) => {
         `https://discord.com/api/guilds/${guild_id}/roles`,
         {
           name: body.name,
-          color: Math.floor(Math.random() * 0xffffff),
+          color: rando(0xffffff),
         },
         {
           headers: {
@@ -302,13 +303,15 @@ exports.handler = async (event) => {
       const roles = response.data;
       const role = roles.find((r) => r.name === body.name);
       const role_ping = role ? `<@&${role.id}> ` : body.name + " ";
-      axios.post(
+      await axios.post(
         "https://discord.com/api/webhooks/1196239719252635758/0S_Zvuy9lslnEQ6WEJ1G--Q2kt5zV9Af6IAYuuVJDknX9Tk_nu6-LOVPHE-1ybIw5SAg",
         {
           content: `${role_ping}v${body.version} has just been uploaded successfully!`,
         }
       );
-    } catch (err) {}
+    } catch (err) {
+      console.log(err);
+    }
 
     return {
       statusCode: 200,

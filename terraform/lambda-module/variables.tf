@@ -33,3 +33,9 @@ variable "resource_path" {
   description = "The path to the resource from the api gateway root."
   type        = string
 }
+
+variable "environment" {
+  description = "All environment variables required to run"
+  type = map(string)
+  default = {}
+}

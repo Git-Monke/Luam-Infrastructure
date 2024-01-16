@@ -16,6 +16,7 @@ const accessControl = {
 
 exports.handler = async (event) => {
   try {
+    console.log(event.headers["x-code"]);
     const params = `?client_id=${CLIENT_ID}&client_secret=${CLIENT_SECRET}&code=${event.headers["x-code"]}`;
 
     const github_data_response = await axios.post(
@@ -27,6 +28,8 @@ exports.handler = async (event) => {
         },
       }
     );
+
+    console.log(github_data_response);
 
     if (github_data_response.error) {
       return {
@@ -56,6 +59,14 @@ exports.handler = async (event) => {
       })
       .promise();
 
+    const new_entry = {
+      UserID: user_data.id,
+      AvatarUrl: user_data.avatar_url,
+      HtmlUrl: user_data.html_url,
+      Login: user_data.login,
+      Name: user_data.name,
+    };
+
     if (result.Items.length === 0) {
       await docClient
         .put({
@@ -67,7 +78,10 @@ exports.handler = async (event) => {
 
     return {
       statusCode: 200,
-      headers: { ...accessControl },
+      headers: {
+        "Access-Control-Allow-Origin": "*",
+        "Content-Type": "application/json",
+      },
       body: JSON.stringify({
         message: "Signed in successfully",
         access_token: github_data.access_token,
@@ -77,7 +91,10 @@ exports.handler = async (event) => {
   } catch (err) {
     return {
       statusCode: 500,
-      headers: { ...accessControl },
+      headers: {
+        "Access-Control-Allow-Origin": "*",
+        "Content-Type": "application/json",
+      },
       body: JSON.stringify({
         message: err.message || "Unknown Internal Server Error",
       }),

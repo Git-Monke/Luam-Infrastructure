@@ -310,6 +310,8 @@ module "post_package_execution_role" {
   })
 }
 
+
+
 module "post_package_lambda" {
   depends_on = [module.slash_packages]
 
@@ -320,6 +322,9 @@ module "post_package_lambda" {
   resource_id   = module.slash_packages.resource.id
   client_method = "POST"
   role_arn      = module.post_package_execution_role.role_arn
+  environment = {
+    BOT_TOKEN : var.Authorization.BOT_TOKEN
+  }
 }
 
 # Provision POST /packages/install lambda and its required permissions

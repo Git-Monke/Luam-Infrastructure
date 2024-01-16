@@ -19,6 +19,11 @@ provider "aws" {
   region = "us-west-2"
 }
 
+variable "Authorization" {
+  type        = map(string)
+  description = "All of the secrets used in making calls to different API's"
+}
+
 # Provisioning for storing the terraform.tfstate and lock information.
 
 resource "aws_s3_bucket" "terraform_state" {
@@ -115,4 +120,5 @@ variable "redeploy_gateway" {
 module "luam_rest" {
   source          = "./luam-rest"
   redploy_gateway = var.redeploy_gateway
+  Authorization   = var.Authorization
 }

@@ -2,3 +2,5 @@
 lambda_payloads
 **/terraform/.terraform
 .DS_Store
+**/.env
+terraform.tfvars
